@@ -46,3 +46,39 @@
 .back {
   margin-top: 12px;
 }
+
+.question-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.question-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.question-card.selected {
+  border-color: #747bff;
+  box-shadow: 0 0 0 2px rgba(116, 123, 255, 0.2);
+}
+
+.question-text {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.question-actions {
+  display: flex;
+  gap: 8px;
+}
