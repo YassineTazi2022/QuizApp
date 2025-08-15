@@ -3,6 +3,7 @@ import './App.css'
 import RoleSelect from './components/RoleSelect.jsx'
 import HostView from './components/HostView.jsx'
 import PlayerView from './components/PlayerView.jsx'
+import { getCurrentRoomId, setCurrentRoomId, updateUrlParams } from './utils/room.js'
 
 function App() {
   const [role, setRole] = useState(() => {
@@ -18,8 +19,14 @@ function App() {
     }
   }, [role])
 
+  useEffect(() => {
+    // Sync role in URL for shareable links
+    updateUrlParams({ role: role || null })
+  }, [role])
+
   function handleBackToRoleSelect() {
     setRole('')
+    setCurrentRoomId('')
   }
 
   return (

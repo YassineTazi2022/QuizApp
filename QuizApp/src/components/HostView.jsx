@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motorcycleQuestions } from '../data/motorcycleQuestions.js'
+import { createRoom, getCurrentRoomId, setCurrentRoomId } from '../utils/room.js'
 
 function HostView({ onBack }) {
   const [candidates, setCandidates] = useState(() => pickTwoRandomQuestions(motorcycleQuestions))
@@ -12,6 +13,15 @@ function HostView({ onBack }) {
       return null
     }
   })
+  const [roomId] = useState(() => {
+    const existing = getCurrentRoomId()
+    if (existing) {
+      setCurrentRoomId(existing)
+      return existing
+    }
+    const id = createRoom()
+    return id
+  })
 
   const totalQuestions = useMemo(() => motorcycleQuestions.length, [])
 
@@ -22,6 +32,11 @@ function HostView({ onBack }) {
       localStorage.removeItem('currentQuestion')
     }
   }, [chosenQuestion])
+
+  // roomId is created in initializer; keep URL/localStorage in sync when it changes
+  useEffect(() => {
+    if (roomId) setCurrentRoomId(roomId)
+  }, [roomId])
 
   function handleReroll() {
     setCandidates(pickTwoRandomQuestions(motorcycleQuestions))
@@ -39,6 +54,7 @@ function HostView({ onBack }) {
   return (
     <div className="section">
       <h2>Quizmaster</h2>
+      <div>Room ID: <strong>{roomId}</strong></div>
       <p>Kies één van de twee willekeurige vragen uit {totalQuestions} motor trivia vragen.</p>
 
       {chosenQuestion && (
