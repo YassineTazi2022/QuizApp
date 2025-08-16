@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motorcycleQuestions } from '../data/motorcycleQuestions.js'
-import { createRoom, getCurrentRoomId, setCurrentRoomId } from '../utils/room.js'
+import { createRoom, getCurrentRoomId, setCurrentRoomId, setRoomQuestion, startNewRound, getRoom } from '../utils/room.js'
 
 function HostView({ onBack }) {
   const [candidates, setCandidates] = useState(() => pickTwoRandomQuestions(motorcycleQuestions))
@@ -26,12 +26,9 @@ function HostView({ onBack }) {
   const totalQuestions = useMemo(() => motorcycleQuestions.length, [])
 
   useEffect(() => {
-    if (chosenQuestion) {
-      localStorage.setItem('currentQuestion', JSON.stringify(chosenQuestion))
-    } else {
-      localStorage.removeItem('currentQuestion')
-    }
-  }, [chosenQuestion])
+    if (!roomId) return
+    setRoomQuestion(roomId, chosenQuestion)
+  }, [chosenQuestion, roomId])
 
   // roomId is created in initializer; keep URL/localStorage in sync when it changes
   useEffect(() => {
@@ -48,6 +45,7 @@ function HostView({ onBack }) {
 
   function handleClearChoice() {
     setChosenQuestion(null)
+    if (roomId) startNewRound(roomId)
     setCandidates(pickTwoRandomQuestions(motorcycleQuestions))
   }
 
@@ -60,6 +58,7 @@ function HostView({ onBack }) {
       {chosenQuestion && (
         <div className="chosen">
           <strong>Gekozen vraag:</strong> {chosenQuestion.question}
+          <div style={{ marginTop: 4, color: '#666' }}>Ronde: <strong>{getRoom(roomId)?.round ?? 1}</strong></div>
           <div className="question-options">
             {chosenQuestion.options.map((opt, idx) => (
               <div key={idx}>• {opt}</div>

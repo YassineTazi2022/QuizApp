@@ -30,7 +30,7 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${role === 'player' ? 'player-mode' : ''}`}>
       {!role && <RoleSelect onSelect={setRole} />}
       {role === 'host' && <HostView onBack={handleBackToRoleSelect} />}
       {role === 'player' && <PlayerView onBack={handleBackToRoleSelect} />}

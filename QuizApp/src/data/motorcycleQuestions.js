@@ -1,6 +1,7 @@
-// Structure: { id: string, question: string, options: string[], answerIndex: number }
+// Structure after processing:
+// { id: string, question: string, options: string[], answerIndex: number, optionImages: string[] }
 
-export const motorcycleQuestions = [
+const baseMotorcycleQuestions = [
   {
     id: 'moto-001',
     question: 'Welke motor wordt vaak gezien als de eerste echte productiemotorfiets?',
