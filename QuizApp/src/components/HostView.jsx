@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motorcycleQuestions } from '../data/motorcycleQuestions.js'
-import { createRoom, getCurrentRoomId, setCurrentRoomId, setRoomQuestion, startNewRound, getRoom } from '../utils/room.js'
+import { createRoom, getCurrentRoomId, setCurrentRoomId, setRoomQuestion, startNewRound } from '../utils/room.js'
+import { connect as wsConnect, wsApi, onMessage } from '../utils/ws.js'
 
 function HostView({ onBack }) {
   const [candidates, setCandidates] = useState(() => pickTwoRandomQuestions(motorcycleQuestions))
@@ -13,6 +14,8 @@ function HostView({ onBack }) {
       return null
     }
   })
+  const [players, setPlayers] = useState([])
+  const [roundNumber, setRoundNumber] = useState(1)
   const [roomId] = useState(() => {
     const existing = getCurrentRoomId()
     if (existing) {
@@ -28,11 +31,31 @@ function HostView({ onBack }) {
   useEffect(() => {
     if (!roomId) return
     setRoomQuestion(roomId, chosenQuestion)
+    // Notify players via WS
+    wsApi.hostSetQuestion(roomId, chosenQuestion)
   }, [chosenQuestion, roomId])
 
   // roomId is created in initializer; keep URL/localStorage in sync when it changes
   useEffect(() => {
-    if (roomId) setCurrentRoomId(roomId)
+    if (roomId) {
+      setCurrentRoomId(roomId)
+      wsConnect(roomId)
+    }
+  }, [roomId])
+
+  // Listen for room updates to keep leaderboard and round in sync
+  useEffect(() => {
+    if (!roomId) return
+    const unsubscribe = onMessage((msg) => {
+      if ((msg.type === 'room_update' || msg.type === 'room_snapshot') && msg.room) {
+        const room = msg.room
+        const leaderboard = Object.entries(room.players || {}).map(([id, info]) => ({ id, ...info }))
+        leaderboard.sort((a, b) => (b.points || 0) - (a.points || 0))
+        setPlayers(leaderboard)
+        setRoundNumber(room.round || 1)
+      }
+    })
+    return () => unsubscribe && unsubscribe()
   }, [roomId])
 
   function handleReroll() {
@@ -46,6 +69,7 @@ function HostView({ onBack }) {
   function handleClearChoice() {
     setChosenQuestion(null)
     if (roomId) startNewRound(roomId)
+    if (roomId) wsApi.hostNewRound(roomId)
     setCandidates(pickTwoRandomQuestions(motorcycleQuestions))
   }
 
@@ -58,7 +82,7 @@ function HostView({ onBack }) {
       {chosenQuestion && (
         <div className="chosen">
           <strong>Gekozen vraag:</strong> {chosenQuestion.question}
-          <div style={{ marginTop: 4, color: '#666' }}>Ronde: <strong>{getRoom(roomId)?.round ?? 1}</strong></div>
+          <div style={{ marginTop: 4, color: '#666' }}>Ronde: <strong>{roundNumber}</strong></div>
           <div className="question-options">
             {chosenQuestion.options.map((opt, idx) => (
               <div key={idx}>• {opt}</div>
@@ -66,6 +90,15 @@ function HostView({ onBack }) {
           </div>
           <div className="question-actions">
             <button className="btn" onClick={handleClearChoice}>Nieuwe ronde</button>
+          </div>
+          <div className="leaderboard" style={{ marginTop: 12 }}>
+            <h3>Scorebord</h3>
+            {players.map((p, idx) => (
+              <div key={p.id || idx} className="player-score">
+                <span className="player-name">{p.name}</span>
+                <span className="player-points">{p.points || 0} punten</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

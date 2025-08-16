@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getCurrentRoomId, roomExists, setCurrentRoomId, getOrCreatePlayerId, upsertPlayer, getRoom, submitAnswer, hasAnswered, removePlayer } from '../utils/room.js'
+import { getCurrentRoomId, setCurrentRoomId, getOrCreatePlayerId, upsertPlayer, hasAnswered, removePlayer } from '../utils/room.js'
+import { connect as wsConnect, wsApi, onMessage } from '../utils/ws.js'
 
 function PlayerView({ onBack }) {
   const [inputRoom, setInputRoom] = useState('')
@@ -9,48 +10,50 @@ function PlayerView({ onBack }) {
   const [roundNumber, setRoundNumber] = useState(1)
   const [answeredQuestion, setAnsweredQuestion] = useState(null)
   const [players, setPlayers] = useState([])
-  const [playerName, setPlayerName] = useState('')
+  const [playerName, setPlayerName] = useState(() => {
+    try { return localStorage.getItem('playerName') || '' } catch { return '' }
+  })
   const [playerId] = useState(() => getOrCreatePlayerId())
 
   useEffect(() => {
     const maybeRoom = getCurrentRoomId()
-    if (maybeRoom && roomExists(maybeRoom)) {
+    if (maybeRoom) {
       setJoinedRoom(maybeRoom)
     }
   }, [])
 
-  // Sync room state periodically (question, round, players, answers)
+  // Sync room state via WebSocket
   useEffect(() => {
     if (!joinedRoom) return
 
-    const syncRoom = () => {
-      const room = getRoom(joinedRoom)
+    const applyRoom = (room) => {
       if (!room) return
       setChosenQuestion(room.currentQuestion)
       setRoundNumber(room.round || 1)
       const leaderboard = Object.entries(room.players || {}).map(([id, info]) => ({ id, ...info }))
       leaderboard.sort((a, b) => (b.points || 0) - (a.points || 0))
       setPlayers(leaderboard)
-      try {
-        const answered = hasAnswered(joinedRoom, playerId)
-        if (answered) {
-          // lock if answered this round
-          if (answeredQuestion === null && room.answers && room.answers[String(room.round)] && room.answers[String(room.round)][playerId] !== undefined) {
-            setAnsweredQuestion(room.answers[String(room.round)][playerId])
-          }
-        } else {
-          // if new round and no answer stored, unlock answer
-          setAnsweredQuestion(null)
-        }
-      } catch (e) {
-        // ignore transient errors
+      const roundKey = String(room.round || 1)
+      if (room.answers && room.answers[roundKey] && room.answers[roundKey][playerId] !== undefined) {
+        setAnsweredQuestion(room.answers[roundKey][playerId])
+      } else {
+        setAnsweredQuestion(null)
+      }
+      if (room.players && room.players[playerId] && room.players[playerId].name && room.players[playerId].name !== playerName) {
+        setPlayerName(room.players[playerId].name)
       }
     }
 
-    syncRoom()
-    const interval = setInterval(syncRoom, 800)
+    wsConnect(joinedRoom)
+    const unsubscribe = onMessage((msg) => {
+      if ((msg.type === 'room_update' || msg.type === 'room_snapshot') && msg.room) {
+        applyRoom(msg.room)
+      }
+    })
 
-    return () => clearInterval(interval)
+    return () => {
+      unsubscribe && unsubscribe()
+    }
   }, [joinedRoom])
 
   // Add keyboard support for answering questions
@@ -78,15 +81,15 @@ function PlayerView({ onBack }) {
       setError('Voer een room ID in')
       return
     }
-    if (!roomExists(id)) {
-      setError('Room niet gevonden')
-      return
-    }
     setError('')
     setJoinedRoom(id)
     setCurrentRoomId(id)
     const name = playerName.trim() || 'Speler'
     upsertPlayer(id, playerId, name)
+    try { localStorage.setItem('playerName', name) } catch {}
+    wsConnect(id)
+    wsApi.playerJoin(id, playerId, name)
+    wsApi.playerUpdateName(id, playerId, name)
   }
 
   function handleLeave() {
@@ -94,14 +97,13 @@ function PlayerView({ onBack }) {
     setCurrentRoomId('')
     setChosenQuestion(null)
     removePlayer(joinedRoom, playerId)
+    if (joinedRoom) wsApi.playerLeave(joinedRoom, playerId)
   }
 
   function handleAnswer(answerIndex) {
     if (!chosenQuestion || answeredQuestion !== null) return
-    const result = submitAnswer(joinedRoom, playerId, answerIndex)
-    if (result && result.accepted) {
-      setAnsweredQuestion(answerIndex)
-    }
+    setAnsweredQuestion(answerIndex)
+    wsApi.playerAnswer(joinedRoom, playerId, answerIndex)
   }
 
   return (
@@ -122,7 +124,11 @@ function PlayerView({ onBack }) {
             Naam
             <input
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value
+                setPlayerName(val)
+                try { localStorage.setItem('playerName', val) } catch {}
+              }}
               placeholder="Jouw naam"
               style={{ marginLeft: 8, padding: 6 }}
             />

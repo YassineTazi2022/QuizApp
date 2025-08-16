@@ -504,4 +504,13 @@ const baseMotorcycleQuestions = [
   },
 ]
 
+function buildImageUrl(optionText) {
+  const query = encodeURIComponent(`motorcycle ${optionText}`)
+  return `https://source.unsplash.com/800x600/?${query}`
+}
+
+export const motorcycleQuestions = baseMotorcycleQuestions.map((q) => ({
+  ...q,
+  optionImages: (q.options || []).map((opt) => buildImageUrl(opt)),
+}))
 
