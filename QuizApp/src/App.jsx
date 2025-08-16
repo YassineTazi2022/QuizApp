@@ -3,7 +3,8 @@ import './App.css'
 import RoleSelect from './components/RoleSelect.jsx'
 import HostView from './components/HostView.jsx'
 import PlayerView from './components/PlayerView.jsx'
-import { getCurrentRoomId, setCurrentRoomId, updateUrlParams } from './utils/room.js'
+import { setCurrentRoomId, updateUrlParams } from './utils/room.js'
+import Header from './components/Header.jsx'
 
 function App() {
   const [role, setRole] = useState(() => {
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <div className={`app ${role === 'player' ? 'player-mode' : ''}`}>
+      <Header />
       {!role && <RoleSelect onSelect={setRole} />}
       {role === 'host' && <HostView onBack={handleBackToRoleSelect} />}
       {role === 'player' && <PlayerView onBack={handleBackToRoleSelect} />}
