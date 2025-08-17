@@ -1,12 +1,50 @@
-# React + Vite
+# QuizApp
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Een eenvoudige live-quiz applicatie gebouwd met React en Vite. De host kiest vragen; spelers joinen met een room ID en antwoorden live. Realtime synchronisatie gebeurt via een Node.js WebSocket server (`ws`).
 
-Currently, two official plugins are available:
+## Uitvoeren
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Installeer dependencies:
+   ```bash
+   npm install
+   ```
+2. Start de WebSocket-server (poort 3001 standaard):
+   ```bash
+   npm run server
+   ```
+3. Start de frontend (Vite dev server):
+   ```bash
+   npm run dev
+   ```
 
-## Expanding the ESLint configuration
+## Projectstructuur (kort)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Frontend: React + Vite (`src/`)
+- WebSocket-server: Node + `ws` (`server/index.js`)
+- Data: `src/data/motorcycleQuestions.js` (eigen dataset; opties krijgen dynamische achtergrondafbeeldingen)
+
+## Sources (gebruikt in dit project)
+
+- Dependencies
+  - React: `https://react.dev/`
+  - React DOM: `https://www.npmjs.com/package/react-dom`
+  - Vite: `https://vitejs.dev/`
+  - @vitejs/plugin-react (Fast Refresh/Babel): `https://github.com/vitejs/vite-plugin-react`
+  - ws (WebSocket server, Node): `https://github.com/websockets/ws`
+
+- Dev tooling
+  - ESLint: `https://eslint.org/`
+  - @eslint/js: `https://www.npmjs.com/package/@eslint/js`
+  - eslint-plugin-react-hooks: `https://www.npmjs.com/package/eslint-plugin-react-hooks`
+  - eslint-plugin-react-refresh: `https://www.npmjs.com/package/eslint-plugin-react-refresh`
+  - globals (ESLint globals): `https://www.npmjs.com/package/globals`
+  - npm-run-all: `https://github.com/mysticatea/npm-run-all`
+  - Node.js runtime: `https://nodejs.org/`
+
+- Web APIs (documentatie geraadpleegd; direct gebruikt in code)
+  - WebSocket API (frontend): `https://developer.mozilla.org/docs/Web/API/WebSocket`
+  - Web Storage / localStorage: `https://developer.mozilla.org/docs/Web/API/Window/localStorage`
+  - URLSearchParams: `https://developer.mozilla.org/docs/Web/API/URLSearchParams`
+  - History API `replaceState`: `https://developer.mozilla.org/docs/Web/API/History/replaceState`
+  - `crypto.randomUUID()`: `https://developer.mozilla.org/docs/Web/API/Crypto/randomUUID`
+
